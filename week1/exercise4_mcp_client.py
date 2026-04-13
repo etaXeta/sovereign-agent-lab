@@ -112,6 +112,15 @@ def _make_mcp_caller(tool_name: str, server_script: str):
         if extra:
             merged.update(extra)
 
+        # UNWRAP: If LangChain passed the arguments as a single dict under 'input'
+        # or 'kwargs' (due to schema inference or model behavior), extract it.
+        # This handles the "2 validation errors" where MCP saw {'input': {...}}
+        # instead of the flat arguments.
+        if len(merged) == 1 and list(merged.keys())[0] in ["kwargs", "input"]:
+            val = list(merged.values())[0]
+            if isinstance(val, dict):
+                merged = val
+
         async def _inner() -> str:
             params = StdioServerParameters(command=sys.executable, args=[server_script])
             async with stdio_client(params) as (r, w):

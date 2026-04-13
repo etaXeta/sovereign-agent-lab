@@ -36,10 +36,8 @@ build-backend = "setuptools.build_meta"
 # sovereign_agent is the persistent agent project that grows each week.
 packages = ["sovereign_agent", "sovereign_agent.tools", "sovereign_agent.agents", "sovereign_agent.tests"]
 
-[tool.uv]
-# uv manages the virtual environment. Run `uv sync` to create it.
-# Run `uv sync --extra test` to also install pytest.
-dev-dependencies = [
+[dependency-groups]
+dev = [
     "pytest>=8.0.0",
     "ruff>=0.9.0",
 ]

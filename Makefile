@@ -1,18 +1,21 @@
 # ==============================================================================
 # 🎨 Terminal Colors
 # ==============================================================================
-GREEN   := $(shell tput -Txterm setaf 2 2>/dev/null || echo '')
-YELLOW  := $(shell tput -Txterm setaf 3 2>/dev/null || echo '')
-BLUE    := $(shell tput -Txterm setaf 4 2>/dev/null || echo '')
-MAGENTA := $(shell tput -Txterm setaf 5 2>/dev/null || echo '')
-RED     := $(shell tput -Txterm setaf 1 2>/dev/null || echo '')
-RESET   := $(shell tput -Txterm sgr0  2>/dev/null || echo '')
+GREEN   :=
+YELLOW  :=
+BLUE    :=
+MAGENTA :=
+RED     :=
+RESET   :=
 
 # ==============================================================================
 # ⚙️  Configuration
 # ==============================================================================
-UV       := uv
+UV       := C:\Users\prita\.local\bin\uv.exe
 RASA_DIR := exercise3_rasa
+
+# Minimal check if UV works
+UV_VERSION := $(shell "$(UV)" --version 2>NUL)
 
 # Load .env so targets that need NEBIUS_KEY can access it directly.
 # If .env doesn't exist yet, nothing is loaded (no error).
@@ -83,8 +86,8 @@ help:
 
 .PHONY: check-uv
 check-uv:
-	@if ! command -v uv >/dev/null 2>&1; then \
-		echo "$(RED)✗ uv not found.$(RESET)"; \
+	@if not exist "C:\Users\prita\.local\bin\uv.exe" ( \
+		echo $(RED)✗ uv not found.$(RESET); \
 		echo ""; \
 		echo "  $(YELLOW)What to do:$(RESET)"; \
 		echo "    Mac/Linux:  $(GREEN)curl -LsSf https://astral.sh/uv/install.sh | sh$(RESET)"; \
@@ -92,9 +95,9 @@ check-uv:
 		echo ""; \
 		echo "  Then $(YELLOW)restart your terminal$(RESET) and try again."; \
 		echo "  If uv is installed but still not found, run: $(GREEN)make doctor$(RESET)"; \
-		exit 1; \
-	fi
-	@echo "$(GREEN)✓ uv found: $(shell uv --version 2>/dev/null || echo unknown)$(RESET)"
+		exit /b 1 \
+	)
+	@echo $(GREEN)✓ uv found: $(shell "C:\Users\prita\.local\bin\uv.exe" --version 2>nul || echo unknown)$(RESET)
 
 # ──────────────────────────────────────────────────────────────────────────────
 # check-env — validates the .env file without false positives.
@@ -117,71 +120,7 @@ check-uv:
 # ──────────────────────────────────────────────────────────────────────────────
 .PHONY: check-env
 check-env:
-	@if [ ! -f .env ]; then \
-		echo "$(RED)✗ .env file not found.$(RESET)"; \
-		echo ""; \
-		echo "  $(YELLOW)What to do:$(RESET)"; \
-		echo "    $(GREEN)cp .env.example .env$(RESET)"; \
-		echo "    then open .env and paste your real Nebius key"; \
-		echo "    where it says $(YELLOW)NEBIUS_KEY=sk-your-key-here$(RESET)"; \
-		exit 1; \
-	fi
-	@# Strip BOM if present (Windows Notepad adds one and it breaks parsing)
-	@if head -c 3 .env 2>/dev/null | od -c 2>/dev/null | head -1 | grep -q '357 273 277'; then \
-		echo "$(RED)✗ .env has a UTF-8 BOM marker at the start of the file.$(RESET)"; \
-		echo "  This happens when you edit .env with Windows Notepad."; \
-		echo ""; \
-		echo "  $(YELLOW)Fix:$(RESET) open .env in VS Code (or any code editor)"; \
-		echo "  and save it with encoding 'UTF-8' (not 'UTF-8 with BOM')."; \
-		exit 1; \
-	fi
-	@# Extract the NEBIUS_KEY value from the first uncommented assignment.
-	@# This is the line-specific parse that the old naive grep couldn't do.
-	@key_line=$$(grep -v '^[[:space:]]*#' .env 2>/dev/null | grep '^[[:space:]]*NEBIUS_KEY[[:space:]]*=' | head -1); \
-	if [ -z "$$key_line" ]; then \
-		echo "$(RED)✗ NEBIUS_KEY is not set in .env.$(RESET)"; \
-		echo ""; \
-		echo "  $(YELLOW)Fix:$(RESET) open .env and add a line like:"; \
-		echo "    $(GREEN)NEBIUS_KEY=sk-yourrealkeyhere$(RESET)"; \
-		echo "  No quotes. No spaces around the = sign."; \
-		exit 1; \
-	fi; \
-	if echo "$$key_line" | grep -q '[[:space:]]*=[[:space:]]'; then \
-		echo "$(RED)✗ .env has spaces around the '=' in NEBIUS_KEY.$(RESET)"; \
-		echo "  The line is:  $$key_line"; \
-		echo ""; \
-		echo "  $(YELLOW)Fix:$(RESET) shell envs don't allow spaces around '='. Write:"; \
-		echo "    $(GREEN)NEBIUS_KEY=sk-yourrealkey$(RESET)   ← no spaces"; \
-		echo "  Not:"; \
-		echo "    $(RED)NEBIUS_KEY = sk-yourrealkey$(RESET)"; \
-		exit 1; \
-	fi; \
-	value=$$(echo "$$key_line" | sed -e 's/^[[:space:]]*NEBIUS_KEY[[:space:]]*=//'); \
-	if echo "$$value" | grep -q '^["'"'"']'; then \
-		echo "$(RED)✗ .env has quotes around NEBIUS_KEY.$(RESET)"; \
-		echo "  The line is:  $$key_line"; \
-		echo ""; \
-		echo "  $(YELLOW)Fix:$(RESET) remove the quotes. Write:"; \
-		echo "    $(GREEN)NEBIUS_KEY=sk-yourrealkey$(RESET)"; \
-		echo "  Not:"; \
-		echo "    $(RED)NEBIUS_KEY=\"sk-yourrealkey\"$(RESET)"; \
-		exit 1; \
-	fi; \
-	if [ -z "$$value" ]; then \
-		echo "$(RED)✗ NEBIUS_KEY is empty in .env.$(RESET)"; \
-		echo "  The line has NEBIUS_KEY= but nothing after the =."; \
-		echo ""; \
-		echo "  $(YELLOW)Fix:$(RESET) paste your real key after the = sign."; \
-		exit 1; \
-	fi; \
-	if [ "$$value" = "sk-your-key-here" ]; then \
-		echo "$(RED)✗ NEBIUS_KEY still has the placeholder value.$(RESET)"; \
-		echo ""; \
-		echo "  $(YELLOW)Fix:$(RESET) open .env and replace 'sk-your-key-here'"; \
-		echo "  with your real key from https://studio.nebius.ai → API Keys"; \
-		exit 1; \
-	fi
-	@echo "$(GREEN)✓ .env file looks valid (NEBIUS_KEY is set)$(RESET)"
+	@C:\Users\prita\.local\bin\uv.exe run python scripts/check_env.py
 
 # ──────────────────────────────────────────────────────────────────────────────
 # doctor — diagnostic target for when things are broken and the student is lost.
@@ -318,15 +257,15 @@ install-rasa: check-uv ## Set up Rasa Pro environment (Python 3.10, Exercise 3 o
 # ==============================================================================
 .PHONY: smoke
 smoke: check-env ## Verify API connection and key are working
-	@echo "$(BLUE)Testing Nebius API connection...$(RESET)"
-	$(UV) run python smoke_test.py
+	@echo Testing Nebius API connection...
+	"$(UV)" run python smoke_test.py
 
 .PHONY: test
 test: ## Run unit tests — checks your tool implementations (no API calls)
-	@echo "$(BLUE)Running tool unit tests...$(RESET)"
-	$(UV) run pytest sovereign_agent/tests/test_week1.py -v
-	@echo ""
-	@echo "$(YELLOW)Fix any failures above before running the exercises.$(RESET)"
+	@echo Running tool unit tests...
+	"$(UV)" run pytest sovereign_agent/tests/test_week1.py -v
+	@echo.
+	@echo Fix any failures above before running the exercises.
 
 # ==============================================================================
 # 📝 Exercise 1 — Context Engineering
@@ -384,19 +323,13 @@ ex2-d: check-env ## Task D — agent graph structure (paste output into mermaid.
 # ==============================================================================
 # 🎙️ Exercise 3 — Rasa Confirmation Agent
 # ==============================================================================
+.PHONY: check-rasa-license
+check-rasa-license:
+	@$(UV) run scripts/check_env.py rasa
+
 .PHONY: ex3-train
-ex3-train: ## Train the Rasa Pro CALM model (run once, or after pulling fixes)
+ex3-train: check-rasa-license ## Train the Rasa Pro CALM model (run once, or after pulling fixes)
 	@echo "$(MAGENTA)Exercise 3 — Training Rasa Pro CALM model...$(RESET)"
-	@if [ -z "$(RASA_PRO_LICENSE)" ]; then \
-		echo "$(RED)✗ RASA_PRO_LICENSE not set.$(RESET)"; \
-		echo ""; \
-		echo "  $(YELLOW)What to do:$(RESET)"; \
-		echo "  1. Request a free licence:"; \
-		echo "     $(GREEN)https://rasa.com/rasa-pro-developer-edition-license-key-request$(RESET)"; \
-		echo "  2. Check your email (and spam folder) for the key"; \
-		echo "  3. Add to .env: $(GREEN)RASA_PRO_LICENSE=your-long-key$(RESET)"; \
-		exit 1; \
-	fi
 	@echo "$(YELLOW)This takes about 2 minutes (embedding model download on first run).$(RESET)"
 	@echo "$(BLUE)Note: CALM trains much faster than old Rasa — no NLU examples to learn.$(RESET)"
 	@echo "$(BLUE)If you pulled the 2026-04-13 fixes, you MUST re-run this target$(RESET)"
