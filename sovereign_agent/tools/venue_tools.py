@@ -47,9 +47,9 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+
 import requests
 from langchain_core.tools import tool
-from openai import OpenAI
 
 # ─── Venue database ───────────────────────────────────────────────────────────
 # In Week 2 this gets replaced with a real web search.
@@ -273,28 +273,37 @@ def generate_event_flyer(venue_name: str, guest_count: int, event_theme: str) ->
     """
     prompt = _build_flyer_prompt(venue_name, guest_count, event_theme)
 
-
-    try:
-        client = OpenAI(
-            base_url="https://api.tokenfactory.nebius.com/v1/",
-            api_key=os.getenv("NEBIUS_KEY"),
+    # Path 1: real image generation (if a provider is configured)
+    real_url = _attempt_real_image_generation(prompt)
+    if real_url:
+        return json.dumps(
+            {
+                "success": True,
+                "mode": "live",
+                "prompt_used": prompt,
+                "image_url": real_url,
+                "note": "Generated via configured image provider.",
+            }
         )
-        response = client.images.generate(
-            model="black-forest-labs/flux-schnell",
-            prompt=prompt,
-            n=1,
-        )
-        url = response.data[0].url
 
-        return json.dumps({
+    # Path 2: deterministic placeholder (graceful fallback)
+    # A deterministic hash of the prompt keeps the placeholder URL stable
+    # for a given (venue, guests, theme) — useful when diffing agent runs.
+    digest = hashlib.sha1(prompt.encode("utf-8")).hexdigest()[:12]
+    placeholder_url = (
+        f"https://placehold.co/1200x628/1a1a2e/eaeaea"
+        f"?text={venue_name.replace(' ', '+')}+%7C+{guest_count}+guests"
+        f"&id={digest}"
+    )
+    return json.dumps(
+        {
             "success": True,
+            "mode": "placeholder",
             "prompt_used": prompt,
-            "image_url": url,
-        })
-    except Exception as exc:
-        return json.dumps({
-            "success": False,
-            "error": str(exc),
-            "prompt_used": prompt,
-            "image_url": "",
-        })
+            "image_url": placeholder_url,
+            "note": (
+                "No live image model configured (FLYER_IMAGE_MODEL unset "
+                "or provider unavailable). Returned deterministic placeholder."
+            ),
+        }
+    )

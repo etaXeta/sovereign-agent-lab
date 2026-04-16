@@ -22,7 +22,7 @@ TASK_A_CONFIRMED_VENUE = "The Albanach"
 TASK_A_CATERING_COST_GBP = 5600.0
 
 # Did the weather tool return outdoor_ok = True or False?
-TASK_A_OUTDOOR_OK = True
+TASK_A_OUTDOOR_OK = False
 
 # Optional — anything unexpected.
 # If you used a non-default model via RESEARCH_MODEL env var, note it here.
@@ -50,12 +50,12 @@ TASK_B_IMPLEMENTED = True   # True or False
 # Which path did your run take? "live" or "placeholder"
 # Look for the "mode" field in the TOOL_RESULT output of Task B.
 # If you didn't set FLYER_IMAGE_MODEL in .env, you will get "placeholder".
-TASK_B_MODE = "live"
+TASK_B_MODE = "placeholder"
 
 # The image URL returned by the tool. Copy exactly from your terminal output.
 # In placeholder mode this will be a placehold.co URL.
 # In live mode it will be a provider CDN URL.
-TASK_B_IMAGE_URL_OR_ERROR = "https://pictures-storage.storage.eu-north1.nebius.cloud/text2img-1f402003-1dc1-4ebd-9012-2a25deacebca_00001_.webp"
+TASK_B_IMAGE_URL_OR_ERROR = "https://placehold.co/1200x628/1a1a2e/eaeaea?text=The+Haymarket+Vaults+%7C+160+guests&id=2ef939fbbaf6"
 
 # The prompt sent to the image model. Copy from terminal output.
 TASK_B_PROMPT_USED = "Professional event flyer for Edinburgh AI Meetup, tech professionals, modern venue at The Haymarket Vaults, Edinburgh. 160 guests tonight. Warm lighting, Scottish architecture background, clean modern typography."
@@ -71,10 +71,10 @@ The agent survived because the `generate_event_flyer` tool's interface (inputs a
 # Scenario 1: first choice unavailable
 # Quote the specific message where the agent changed course. Min 20 words.
 SCENARIO_1_PIVOT_MOMENT = """
-The user wanted to check The Bow Bar first for 160 vegan guests. The first tool call showed that The Bow Bar's capacity is only 80, which is half of what's needed, so it didn't meet the requirements. Then, the assistant moved on to check The Haymarket Vaults.
+The Bow Bar has a capacity of 80 and is marked as "full", so it doesn't meet the requirements for 160 guests. I'll check The Albanach next.
 """
 
-SCENARIO_1_FALLBACK_VENUE = "The Haymarket Vaults"
+SCENARIO_1_FALLBACK_VENUE = "The Albanach"
 
 # Scenario 2: impossible constraint (300 guests)
 # Did the agent recommend a pub name not in the known venues list?
@@ -82,7 +82,16 @@ SCENARIO_2_HALLUCINATED = False   # True or False
 
 # Paste the final [AI] message.
 SCENARIO_2_FINAL_ANSWER = """
-None of the known Edinburgh venues can accommodate 300 people with vegan options. The closest options had either insufficient capacity (The Albanach: 180, Haymarket Vaults: 160, Bow Bar: 80) or lacked vegan options (Guilford Arms: 200 capacity). You might need to consider non-listed venues or split the event.
+None of the known Edinburgh pubs can accommodate 300 people while meeting all requirements. The maximum capacities are:
+- The Albanach: 180 (vegan available)
+- Haymarket Vaults: 160 (vegan available)
+- Guilford Arms: 200 (no vegan)
+- Bow Bar: 80 (vegan available)
+
+Would you like to:
+1. Consider combining multiple venues?
+2. Adjust the capacity requirements?
+3. Search for non-listed venues?
 """
 
 # Scenario 3: out of scope (train times)
@@ -90,7 +99,12 @@ None of the known Edinburgh venues can accommodate 300 people with vegan options
 SCENARIO_3_TRIED_A_TOOL = False   # True or False
 
 SCENARIO_3_RESPONSE = """
-I don't have access to real-time train schedules or transportation data. For the most accurate information about the last train from Edinburgh Waverley to London, I recommend checking the National Rail website or train service apps like Trainline.
+I don't have access to real-time train schedules or transportation data. For the most accurate information about the last train from Edinburgh Waverley to London, I recommend checking:
+1. The National Rail website (https://www.nationalrail.co.uk)
+2. Train service apps like Citymapper or Trainline
+3. The specific train operator's website (e.g., LNER)
+
+Would you like help with anything related to Edinburgh pubs, weather, or event planning instead?
 """
 
 # Would this behaviour be acceptable in a real booking assistant? Min 30 words.
